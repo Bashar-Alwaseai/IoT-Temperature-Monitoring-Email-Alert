@@ -39,7 +39,7 @@ Overheating can damage equipment or cause fires, and nobody can watch a sensor a
 | SBC1 | [200.1.1.5] |
 
 
-## ⚙️ How It Works
+##  How It Works
 
 ```
 Temperature sensor → SBC reads value → Value ≥ 600 ?
@@ -69,22 +69,60 @@ The program is written in **Python** and runs on the SBC. File: [`Code.py`]
 Main logic:
 
 ```python
-while True:
-    temp = digitalRead(0)
-    if temp >= 600:
-        EmailClient.send("pc@cisco.com", "Temprature Alert", "temprater is high")
-        customWrite(0, HIGH)    # Siren ON
-    else:
-        customWrite(0, LOW)     # Siren OFF
-    sleep(2)
+
+from email import *
+from time import *
+from gpio import *
+
+def onEmailReceive(sender, subject, body):
+	print("Received from: " + sender)
+	print("Subject: " + subject)
+	print("Body: " + body)
+
+def onEmailSend(status):
+	print("send status: " + str(status))
+
+def main():
+	EmailClient.setup(
+		"mcu@cisco.com",
+		"cisco.com",
+		"mcu",
+		"password"
+	)
+	
+	EmailClient.onReceive(onEmailReceive)
+	EmailClient.onSend(onEmailSend)
+	
+	while True:
+		temp = digitalRead(0);
+		print('Temprature ', temp)
+		if (temp>=600):
+			EmailClient.send("pc@cisco.com", "Temprature Alert", "temprater is high")
+			print('tempratur is high')
+			customWrite(0,HIGH)
+		else:
+			print('temprature is normal')
+			customWrite(0,LOW)
+			
+		sleep(2)	
+	
+
+	# check email once a while
+	while True:
+		EmailClient.receive()
+		sleep(5)
+
+if __name__ == "__main__":
+	main()
+
 ```
 
 ##  How to Run
 
-1. Install **Cisco Packet Tracer** [version].
-2. Download `Temperature-Monitoring.pkt` from this repository and open it.
+1. Install **Cisco Packet Tracer** [ 8.2.1 64Bit ].
+2. Download `IoT Temperature Monitoring Email Alert.pkt` from this repository and open it.
 3. Make sure the **Email service** is enabled on the IoT Server with the accounts used by the SBC and the laptop [account details].
-4. Open **SBC1**, then **Programming**, and run `main.py`.
+4. Open **SBC1**, then **Programming**, and run `Code.py`.
 5. Click the temperature sensor and raise the temperature above the limit.
 6. Watch the siren turn on, then open the email client on the laptop and check the alert.
 
@@ -98,9 +136,9 @@ while True:
 ##  Repository Structure
 
 ```
-├── Temperature-Monitoring.pkt   # Packet Tracer project file
+├── IoT Temperature Monitoring Email Alert.pkt   # Packet Tracer project file
 ├── Code/
-│   └── main.py                  # Python program for the SBC
+│   └── Code.py                  # Python program for the SBC
 ├── Images/
 │   └── Topology.png             # Network and devices
 └── README.md
